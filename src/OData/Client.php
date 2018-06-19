@@ -117,6 +117,7 @@ class Client implements \ArrayAccess
     public function __get($name) {
         $this->requested = [];
 
+		$name = urlencode($name);
         @list($type,$objname) = explode('_',$name,2);
         /*
         if(!$objname)
@@ -150,7 +151,7 @@ class Client implements \ArrayAccess
         $options = array_replace_recursive($this->request_options,$options!==null?$options:[]);
         $this->request_options = [];
 
-        $request_str = implode('',$this->requested);
+        $request_str = urlencode(implode('',$this->requested));
         if($this->is_called) {
             array_splice($this->requested,$this->id ? -3 : -2);
             $this->is_called = false;
@@ -254,6 +255,11 @@ class Client implements \ArrayAccess
             $this->requested[] = "(guid'{$this->id}')";
         }
         $this->requested[] = "/";
+		$name = ucfirst($name);
+		$newName = "";
+		foreach ($name as $letter) {
+			$newName .= !preg_match("/^[a-zA-Z]/u", $letter) ? urlencode($letter) : $letter ;
+		}
         $this->requested[] = ucfirst($name);
         return $this->request('POST',[]);
     }
