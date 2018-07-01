@@ -55,6 +55,11 @@ class Client implements \ArrayAccess
         return $this;
     }
 
+    public function skip($cnt) {
+        $this->request_options['query']['$skip'] = $cnt;
+        return $this;
+    }
+
     public function filter($name) {
         $this->request_options['query']['$filter'] = $name;
         return $this;
@@ -75,7 +80,11 @@ class Client implements \ArrayAccess
 
         $query = null;
         if($id) {
-            $query .= "(guid'{$id}')";
+			if (!preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',$id)) {
+				$query .= "(guid'{$id}')";
+			} else {
+				$query .= "({$id})";
+			}
         }
         if($filter) {
             $this->filter($filter);
@@ -100,7 +109,11 @@ class Client implements \ArrayAccess
 
         $query = null;
         if($id) {
-            $query .= "(guid'{$id}')";
+			if (!preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',$id)) {
+				$query .= "(guid'{$id}')";
+			} else {
+				$query .= "({$id})";
+			}
         }
         $this->requested[] = $query;
 
@@ -113,7 +126,12 @@ class Client implements \ArrayAccess
         if($id === null) $id = $this->id;
         $query = null;
         if($id) {
-            $query .= "(guid'{$id}')";
+			if (!preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',$id)) {
+				$query .= "({$id})";
+			} else {
+				$query .= "(guid'{$id}')";
+			}
+
         }
         $this->requested[] = $query;
         return $this->request('DELETE',$options);
@@ -122,7 +140,6 @@ class Client implements \ArrayAccess
     public function __get($name) {
         $this->requested = [];
 
-		$name = urlencode($name);
         @list($type,$objname) = explode('_',$name,2);
         /*
         if(!$objname)
@@ -256,11 +273,16 @@ class Client implements \ArrayAccess
 
     public function __call($name,$arguments=[]) {
         $this->is_called = true;
-        if($this->id) {
-            $this->requested[] = "(guid'{$this->id}')";
+		if($this->id) {
+			$query = "";
+			if (!preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i',$this->id)) {
+				$query .= "({$this->id})";
+			} else {
+				$query .= "(guid'{$this->id}')";
+			}
+            $this->requested[] = $query;// "(guid'{$this->id}')";
         }
         $this->requested[] = "/";
-		$name = ucfirst($name);
         $this->requested[] = ucfirst($name);
         return $this->request('POST',[]);
     }
